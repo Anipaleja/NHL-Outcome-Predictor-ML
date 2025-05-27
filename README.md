@@ -1,6 +1,6 @@
 # NHL Match Outcome Predictor
 
-A work-in-progress machine learning project that predicts the outcome of NHL games using historical match data. Built with a deep learning architecture, the system is designed to handle a wide variety of game metrics and team statistics.
+A **work in progress** machine learning project that predicts the outcome of NHL games using historical match data. Built with a deep learning architecture, the system is designed to handle a wide variety of game metrics and team statistics.
 
 ## Technical Overview
 
@@ -22,7 +22,7 @@ This project leverages a custom-tuned deep feedforward neural network architectu
 
 ## Status
 
-Actively in development. Currently resolving input encoding issues and refining preprocessing steps. Neural net architecture and training loop are functional but unvalidated.
+**Actively in development**. Currently resolving input encoding issues and refining preprocessing steps. Neural net architecture and training loop are functional but unvalidated.
 
 ## License
 
