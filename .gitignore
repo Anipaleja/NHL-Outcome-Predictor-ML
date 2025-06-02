@@ -1,0 +1,9 @@
+# Ignore big CSVs and data folders
+data/
+models/
+*.csv
+*.pkl
+*.h5
+*.json
+.DS_Store
+venv/
