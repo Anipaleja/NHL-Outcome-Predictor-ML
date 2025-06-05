@@ -23,7 +23,8 @@ python main.py
 
 ## Status
 **Actively in development!** Currently resolving input encoding issues and refining preprocessing steps. Neural net architecture and training loop are functional but unvalidated.
+Please feel free to contribute as needed! Submit an issue or pull request.
 
-License
+## License
 
 MIT License
