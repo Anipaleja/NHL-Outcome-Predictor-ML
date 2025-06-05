@@ -19,8 +19,9 @@ This project leverages a custom-tuned deep feedforward neural network architectu
 ```bash
 pip install -r requirements.txt
 python main.py
-Status
 ```
+
+## Status
 **Actively in development!** Currently resolving input encoding issues and refining preprocessing steps. Neural net architecture and training loop are functional but unvalidated.
 
 License
