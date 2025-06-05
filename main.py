@@ -6,42 +6,119 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
 
-def get_team_id_from_name(df, team_name):
-    name_map = df[['team_id', 'team_name']].drop_duplicates()
-    match = name_map[name_map['team_name'].str.lower() == team_name.lower()]
-    if match.empty:
-        raise ValueError(f"Team '{team_name}' not found.")
-    return int(match['team_id'].values[0])
+model = None
+df = None
+
+
+scaler = StandardScaler()
+
+
+TEAM_ID_TO_NAME = {
+    1: 'devils',
+    2: 'islanders',
+    3: 'rangers',
+    4: 'flyers',
+    5: 'penguins',
+    6: 'bruins',
+    7: 'sabres',
+    8: 'canadiens',
+    9: 'senators',
+    10: 'leafs',
+    12: 'hurricanes',
+    13: 'panthers',
+    14: 'lightning',
+    15: 'capitals',
+    16: 'blackhawks',
+    17: 'red wings',
+    18: 'predators',
+    19: 'blues',
+    20: 'flames',
+    21: 'avalanche',
+    22: 'oilers',
+    23: 'canucks',
+    24: 'ducks',
+    25: 'stars',
+    26: 'kings',
+    28: 'sharks',
+    29: 'blue jackets',
+    30: 'wild',
+    52: 'jets',
+    53: 'coyotes',
+    54: 'golden knights',
+    55: 'kraken'
+}
+
+
+def get_team_id_from_name(team_name):
+    for team_id, name in TEAM_ID_TO_NAME.items():
+        if name.lower() == team_name.lower():
+            return team_id
+    raise ValueError(f"Team '{team_name}' not found.")
+
 
 def get_team_features(df, team_id):
-    # Pull aggregated stats for given team_id (you can choose recent games or season averages)
-    team_data = df[df['team_id'] == team_id].mean(numeric_only=True)  # example: average stats
-    # Drop non-feature columns
-    team_features = team_data.drop(['team_id', 'game_id', 'goals'], errors='ignore')
+    team_data = df[df['team_id'] == team_id].copy()
+
+    # Drop same columns as in preprocess_data
+    cols_to_drop = ["team_id", "game_id", "HoA", "won", "settled_in", "head_coach", "is_home"]
+    team_data = team_data.drop(columns=[col for col in cols_to_drop if col in team_data.columns], errors='ignore')
+
+   
+
+    # Label encode any object columns just like preprocess_data
+    for col in team_data.select_dtypes(include='object').columns:
+        team_data[col] = LabelEncoder().fit_transform(team_data[col].astype(str))
+
+    # Drop inf/nan values
+    team_data = team_data.replace([np.inf, -np.inf], np.nan).dropna()
+
+    # Get mean of numeric features
+    team_features = team_data.mean(numeric_only=True)
+
     return team_features.values
 
+
+def create_team_features(df, team_id):
+    team_data = df[df['team_id'] == team_id].copy()
+
+    cols_to_drop = ["team_id", "game_id", "HoA", "won", "settled_in", "head_coach", "is_home", "date"]
+    team_data = team_data.drop(columns=[col for col in cols_to_drop if col in team_data.columns], errors='ignore')
+
+    for col in team_data.select_dtypes(include='object').columns:
+        team_data[col] = LabelEncoder().fit_transform(team_data[col].astype(str))
+
+    team_data = team_data.replace([np.inf, -np.inf], np.nan).dropna()
+
+    team_avg = team_data.mean(numeric_only=True)
+
+    # Reindex to match training features exactly
+    expected_cols = scaler.feature_names_in_  # This attribute exists in sklearn >= 1.0
+    team_avg = team_avg.reindex(expected_cols).fillna(0)
+
+    print("Number of features in team_avg:", team_avg.shape[0])
+    expected_features = len(expected_cols)
+    assert team_avg.shape[0] == expected_features, f"Expected {expected_features} features, got {team_avg.shape[0]}"
+
+    team_avg_df = pd.DataFrame([team_avg], columns=expected_cols)
+
+    team_scaled = scaler.transform(team_avg_df)
+
+    return torch.tensor(team_scaled, dtype=torch.float32)
+
+
 def create_matchup_features(df, team1_id, team2_id):
-    # Get features for both teams
-    team1_feats = get_team_features(df, team1_id)
-    team2_feats = get_team_features(df, team2_id)
+    team1_features = create_team_features(df, team1_id)
+    team2_features = create_team_features(df, team2_id)
+    matchup_features = torch.cat((team1_features, team2_features), dim=1)
+    return matchup_features
 
-    # Combine features (how you combine depends on your model input)
-    # For example, concatenate team1 and team2 features side-by-side
-    matchup_features = np.concatenate([team1_feats, team2_feats])
-
-    # Scale features (use the scaler you fit during training)
-    matchup_features_scaled = scaler.transform(matchup_features.reshape(1, -1))
-
-    return torch.tensor(matchup_features_scaled, dtype=torch.float32)
-
-def predict_matchup(team1_id, team2_id):
-    df = load_and_merge_data()
-    # Use your existing scaler object (you might need to save it globally or return from preprocess_data)
-    matchup_tensor = create_matchup_features(df, team1_id, team2_id)
+def predict_matchup(team_id):
+    team_tensor = create_team_features(df, team_id)
     model.eval()
     with torch.no_grad():
-        pred_goals = model(matchup_tensor).item()
-    return pred_goals
+        predicted_goals = model(team_tensor).item()
+    return predicted_goals
+
 
 def load_and_merge_data():
     # Load datasets
@@ -65,26 +142,21 @@ def load_and_merge_data():
     return merged
 
 def preprocess_data(df):
-    # Drop columns that are not useful or leak label
-    cols_to_drop = ["team_id", "game_id", "HoA", "won", "settled_in", "head_coach", "is_home"]
+    cols_to_drop = ["team_id", "game_id", "HoA", "won", "settled_in", "head_coach", "is_home", "date"]
+    # Drop columns that are not needed for training
     df = df.drop(columns=[col for col in cols_to_drop if col in df.columns], errors='ignore')
+    print("Columns after drop (preprocess_data):", df.columns.tolist())
 
-    # Encode categorical columns if any remain
+
     for col in df.select_dtypes(include='object').columns:
         df[col] = LabelEncoder().fit_transform(df[col].astype(str))
 
-    # Remove infinite and NaNs
     df = df.replace([np.inf, -np.inf], np.nan).dropna()
 
-    # Separate features and target (goals)
     X = df.drop(columns=["goals"])
     y = df["goals"]
 
-    # Scale features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    return X_scaled, y
+    return X, y  # Don't scale here
 
 def build_model(input_dim):
     model = nn.Sequential(
@@ -120,11 +192,20 @@ def evaluate_model(model, test_loader, criterion):
     print(f"Test MSE: {np.mean(losses):.4f}")
 
 def main():
+    global df, model
     df = load_and_merge_data()
     X, y = preprocess_data(df)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Fit global scaler
+    X_scaled = scaler.fit_transform(X)
+    print("Features used for training:", X.columns.tolist())
+    print("Number of features for scaler:", X.shape[1])
 
+
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+    # Torch datasets
     train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32),
                                   torch.tensor(y_train.values, dtype=torch.float32).view(-1, 1))
     test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32),
@@ -133,44 +214,36 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=32)
 
+    # Build and train model
     model = build_model(X.shape[1])
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     train_model(model, train_loader, criterion, optimizer, epochs=10)
     evaluate_model(model, test_loader, criterion)
-    model.eval()  # Set model to evaluation mode
-    with torch.no_grad():
-    # Convert X_test (numpy) to torch tensor with float32 dtype
-        X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
-        preds = model(X_test_tensor).squeeze().numpy()
 
+    # User prediction input
+    team1_name = input("Enter Team 1 Name: ")
+    team2_name = input("Enter Team 2 Name: ")
 
-    for i in range(10):
-        print(f"Predicted: {preds[i]:.3f}, Actual: {y_test.values[i]:.3f}")
+    try:
+        team1_id = get_team_id_from_name(team1_name)
+        team2_id = get_team_id_from_name(team2_name)
+    except ValueError as e:
+        print(e)
+        return
 
-    df = load_and_merge_data()
+    goals_team1 = predict_matchup(team1_id)
+    goals_team2 = predict_matchup(team2_id)
 
-team1_name = input("Enter Team 1 Name: ")
-team2_name = input("Enter Team 2 Name: ")
+    print(f"Predicted goals - {team1_name}: {goals_team1:.1f}, {team2_name}: {goals_team2:.1f}")
+    if goals_team1 > goals_team2:
+        print(f"{team1_name} is predicted to WIN!")
+    elif goals_team2 > goals_team1:
+        print(f"{team2_name} is predicted to WIN!")
+    else:
+        print("It's predicted to be a DRAW!")
 
-try:
-    team1_id = get_team_id_from_name(df, team1_name)
-    team2_id = get_team_id_from_name(df, team2_name)
-except ValueError as e:
-    print(e)
-    exit()
-
-goals_team1 = predict_matchup(team1_id, team2_id)
-goals_team2 = predict_matchup(team2_id, team1_id)
-
-print(f"Predicted goals - {team1_name}: {goals_team1:.1f}, {team2_name}: {goals_team2:.1f}")
-if goals_team1 > goals_team2:
-    print(f"{team1_name} is predicted to WIN!")
-elif goals_team2 > goals_team1:
-    print(f"{team2_name} is predicted to WIN!")
-else:
-    print("It's predicted to be a DRAW!")
 
 if __name__ == "__main__":
     main()
