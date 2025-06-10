@@ -31,9 +31,10 @@ python main.py
 ```
 Output should look like this: 
 
-<img width="419" alt="Screenshot 2025-05-29 at 2 19 30 PM" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" />
+<img width="1000" alt="Screenshot 2025-05-29 at 2 19 30 PM" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" />
 
-![NHL Rec-2](https://github.com/user-attachments/assets/fbac5eb1-1629-43ee-bfcd-82d37c7cd34c)
+
+![NHL Rec-3](https://github.com/user-attachments/assets/0d334184-a3c3-493d-86f7-c5c5fa71544c)
 
 
 ## Status
