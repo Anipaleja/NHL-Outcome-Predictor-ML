@@ -33,6 +33,8 @@ Output should look like this:
 
 <img width="419" alt="Screenshot 2025-05-29 at 2 19 30 PM" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" />
 
+![REC-20250610143429-3](https://github.com/user-attachments/assets/0f35c5e8-909e-4e44-9643-53a0f3fab0b7)
+
 
 ## Status
 **Actively in development!** Currently resolving input encoding issues and refining preprocessing steps. Neural net architecture and training loop are functional but unvalidated.
