@@ -30,6 +30,7 @@ pip install -r requirements.txt
 python main.py
 ```
 Output should look like this: 
+
 <img width="419" alt="Screenshot 2025-05-29 at 2 19 30 PM" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" />
 
 
