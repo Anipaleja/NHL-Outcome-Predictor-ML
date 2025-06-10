@@ -33,7 +33,7 @@ Output should look like this:
 
 <img width="419" alt="Screenshot 2025-05-29 at 2 19 30 PM" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" />
 
-![NHL Rec](https://github.com/user-attachments/assets/ffbce302-d2d7-4fb9-8a88-ac271c164684)
+![NHL Rec-2](https://github.com/user-attachments/assets/fbac5eb1-1629-43ee-bfcd-82d37c7cd34c)
 
 
 ## Status
