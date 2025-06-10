@@ -3,6 +3,11 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)  [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)  [![Stars](https://img.shields.io/github/stars/anipaleja/NHL-Outcome-Predictor-ML?style=social)](https://github.com/anipaleja/NHL-Outcome-Predictor-ML/stargazers) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/) [![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.4+-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 
 
+
+https://github.com/user-attachments/assets/d90c403a-81db-4cb0-aa36-0eddc8395f4f
+
+
+
 A **work-in-progress** machine learning project that predicts the outcome of NHL games using historical match data. Built with a deep learning architecture, the system is designed to handle a wide variety of game metrics and team statistics.
 
 **PLEASE NOTE:** There are two different branches of the repository, the main branch is a working predictor based on the averages of previous statistics and data. The Upcoming-Game-Prediction branch is for a seperate part of the project that uses the NHL API for real time statistics, although, I am trying to get the API to send the real time statistics to a `.csv` file to get the data more locally. 
