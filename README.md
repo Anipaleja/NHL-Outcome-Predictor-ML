@@ -4,9 +4,6 @@
 
 
 
-
-
-
 A **work-in-progress** machine learning project that predicts the outcome of NHL games using historical match data. Built with a deep learning architecture, the system is designed to handle a wide variety of game metrics and team statistics.
 
 **PLEASE NOTE:** There are two different branches of the repository, the main branch is a working predictor based on the averages of previous statistics and data. The Upcoming-Game-Prediction branch is for a seperate part of the project that uses the NHL API for real time statistics, although, I am trying to get the API to send the real time statistics to a `.csv` file to get the data more locally. 
