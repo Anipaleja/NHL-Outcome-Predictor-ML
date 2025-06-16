@@ -1,6 +1,6 @@
 # NHL Match Outcome Predictor
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)  [![License: GNU AFFERO GENERAL PUBLIC LICENSE](https://img.shields.io/badge/License-GNU-AFFERO-GENERAL-PUBLIC-LICENSE-green.svg)](LICENSE)  [![Stars](https://img.shields.io/github/stars/anipaleja/NHL-Outcome-Predictor-ML?style=social)](https://github.com/anipaleja/NHL-Outcome-Predictor-ML/stargazers) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/) [![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.4+-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)  [![License:](https://img.shields.io/badge/License-GNU-AFFERO-GENERAL-PUBLIC-LICENSE-green.svg)](LICENSE)  [![Stars](https://img.shields.io/github/stars/anipaleja/NHL-Outcome-Predictor-ML?style=social)](https://github.com/anipaleja/NHL-Outcome-Predictor-ML/stargazers) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/) [![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.4+-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 
 
 A **work-in-progress** machine learning project that predicts the outcome of NHL games using historical match data. Built with a deep learning architecture, the system is designed to handle a wide variety of game metrics and team statistics.
