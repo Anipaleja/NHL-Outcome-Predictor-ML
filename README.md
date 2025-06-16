@@ -39,4 +39,4 @@ Please feel free to contribute as needed! Submit an issue or pull request.
 
 ## License
 
-MIT License
+GNU AFFERO GENERAL PUBLIC LICENSE
