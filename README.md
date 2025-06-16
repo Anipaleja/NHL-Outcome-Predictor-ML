@@ -28,6 +28,7 @@ Output should look like this:
 
 ![NHL Rec-3](https://github.com/user-attachments/assets/0d334184-a3c3-493d-86f7-c5c5fa71544c)
 
+After installing necessary requirements, the model will start training itself with the Epoch and loss as shown below: 
 
 <img width="990" alt="Screenshot 2025-05-29 at 2 19 30 PM" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" />
 
