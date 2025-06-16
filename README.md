@@ -28,10 +28,9 @@ Output should look like this:
 
 ![NHL Rec-3](https://github.com/user-attachments/assets/0d334184-a3c3-493d-86f7-c5c5fa71544c)
 
-After installing the required prerequisites, the model initiates its self-training process, monitoring the Epoch and loss metrics as displayed below:  
-<p align="center">
-<img width="700" alt="Screenshot 2025-05-29 at 2 19 30 PM" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" />
-</p>
+Model training output will display live epoch and loss metrics, like this:
+
+<p align="center"> <img width="700" alt="Training Screenshot" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" style="border-radius: 12px;" /> </p>
 ## Status
 **Actively in development!** Currently resolving input encoding issues and refining preprocessing steps. Neural net architecture and training loop are functional but unvalidated.
 Please feel free to contribute as needed! Submit an issue or pull request.
