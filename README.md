@@ -28,7 +28,7 @@ Output should look like this:
 
 ![NHL Rec-3](https://github.com/user-attachments/assets/0d334184-a3c3-493d-86f7-c5c5fa71544c)
 
-Model training output will display live epoch and loss metrics, like this:
+After installing the required prerequisites, the model initiates its self-training process, monitoring the Epoch and loss metrics as displayed below:  
 
 <p align="center"> <img width="700" alt="Training Screenshot" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" style="border-radius: 12px;" /> </p>
 ## Status
