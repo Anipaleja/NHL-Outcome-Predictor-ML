@@ -30,7 +30,7 @@ Output should look like this:
 
 After installing the required prerequisites, the model initiates its self-training process, monitoring the Epoch and loss metrics as displayed below:  
 
-<p align="center"> <img width="700" alt="Training Screenshot" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" style="border-radius: 12px;" /> </p>
+<p align="center"> <img width="1000" alt="Training Screenshot" src="https://github.com/user-attachments/assets/ac58c14e-64bf-4513-86e3-43b4eba66fb2" style="border-radius: 12px;" /> </p>
 ## Status
 **Actively in development!** Currently resolving input encoding issues and refining preprocessing steps. Neural net architecture and training loop are functional but unvalidated.
 Please feel free to contribute as needed! Submit an issue or pull request.
