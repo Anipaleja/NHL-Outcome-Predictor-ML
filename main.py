@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import pandas as pd
 import numpy as np
 import torch
@@ -22,6 +24,10 @@ from datetime import timedelta
 import os
 import sys
 import scipy.stats as stats
+import matplotlib.pyplot as plt
+import seaborn as sns
+import io
+import base64
 
 # Optional: Flask for web dashboard
 try:
@@ -689,6 +695,136 @@ def advanced_predict(predictor, df, home_team_id, away_team_id, feature_cols):
         'matchup_features': matchup_features
     }
 
+def monte_carlo_simulation(home_goals, away_goals, n_sim=10000):
+    # Simulate n_sim games using Poisson for each team
+    home_sim = np.random.poisson(home_goals, n_sim)
+    away_sim = np.random.poisson(away_goals, n_sim)
+    home_wins = np.sum(home_sim > away_sim)
+    away_wins = np.sum(away_sim > home_sim)
+    ties = np.sum(home_sim == away_sim)
+    most_likely_score = (int(stats.mode(home_sim, keepdims=True)[0][0]), int(stats.mode(away_sim, keepdims=True)[0][0]))
+    upset_prob = min(home_wins, away_wins) / n_sim
+    return {
+        'home_win_pct': home_wins / n_sim,
+        'away_win_pct': away_wins / n_sim,
+        'tie_pct': ties / n_sim,
+        'most_likely_score': most_likely_score,
+        'upset_prob': upset_prob,
+        'home_sim': home_sim,
+        'away_sim': away_sim
+    }
+
+def head_to_head_analytics(df, home_team_id, away_team_id, n=10):
+    mask = (
+        ((df['team_id'] == home_team_id) & (df['opponent_id'] == away_team_id)) |
+        ((df['team_id'] == away_team_id) & (df['opponent_id'] == home_team_id))
+    )
+    h2h = df[mask].sort_values('date_time', ascending=False).head(n)
+    if h2h.empty:
+        return None
+    home_games = h2h[h2h['team_id'] == home_team_id]
+    away_games = h2h[h2h['team_id'] == away_team_id]
+    home_win_rate = home_games['won'].mean() if not home_games.empty else 0.5
+    away_win_rate = away_games['won'].mean() if not away_games.empty else 0.5
+    avg_margin = (home_games['goals'] - home_games['goals_against']).mean() if not home_games.empty else 0
+    streak = 'N/A'
+    if not home_games.empty:
+        streak = 'W' if home_games.iloc[0]['won'] else 'L'
+    return {
+        'recent_games': h2h[['date_time', 'team_id', 'goals', 'goals_against', 'won']].to_dict('records'),
+        'home_win_rate': home_win_rate,
+        'away_win_rate': away_win_rate,
+        'avg_margin': avg_margin,
+        'home_streak': streak
+    }
+
+def feature_sensitivity(predictor, feature_vector, feature_cols, top_feature, base_win_prob):
+    idx = feature_cols.index(top_feature)
+    values = np.linspace(feature_vector[idx]*0.7, feature_vector[idx]*1.3, 7)
+    win_probs = []
+    for v in values:
+        fv = feature_vector.copy()
+        fv[idx] = v
+        if hasattr(predictor, 'win_model'):
+            win_prob = predictor.win_model.predict_proba([fv])[0][1]
+        else:
+            win_prob = base_win_prob
+        win_probs.append(win_prob)
+    return values, win_probs
+
+def permutation_importance(predictor, feature_vector, feature_cols, base_win_prob):
+    # For each feature, permute and see impact on win prob
+    impacts = []
+    for i, col in enumerate(feature_cols):
+        fv = feature_vector.copy()
+        np.random.shuffle(fv)
+        if hasattr(predictor, 'win_model'):
+            win_prob = predictor.win_model.predict_proba([fv])[0][1]
+        else:
+            win_prob = base_win_prob
+        impacts.append(abs(win_prob - base_win_prob))
+    idx = np.argsort(impacts)[-5:][::-1]
+    return [(feature_cols[i], impacts[i]) for i in idx]
+
+def advanced_matchup_keys(df, home_team_id, away_team_id, feature_cols, feature_vector, predictor, base_win_prob):
+    # For top 2 features, show what value would swing win prob by >10%
+    keys = []
+    for top_feature in get_top_features(predictor.win_model, feature_vector, feature_cols, n=2):
+        idx = feature_cols.index(top_feature)
+        orig = feature_vector[idx]
+        for delta in np.linspace(-0.5, 0.5, 11):
+            fv = feature_vector.copy()
+            fv[idx] = orig + delta
+            if hasattr(predictor, 'win_model'):
+                win_prob = predictor.win_model.predict_proba([fv])[0][1]
+            else:
+                win_prob = base_win_prob
+            if abs(win_prob - base_win_prob) > 0.1:
+                keys.append(f"If {top_feature} changes by {delta:+.2f}, win probability shifts to {win_prob:.1%}")
+                break
+    return keys
+
+def plot_feature_sensitivity(values, win_probs, feature_name):
+    plt.figure(figsize=(4,2.5))
+    plt.plot(values, win_probs, marker='o', color='#003366')
+    plt.xlabel(feature_name)
+    plt.ylabel('Win Probability')
+    plt.title(f'Sensitivity: {feature_name}')
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close()
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode('utf-8')
+
+def plot_permutation_importance(perm):
+    features, impacts = zip(*perm)
+    plt.figure(figsize=(4,2.5))
+    sns.barplot(x=list(impacts), y=list(features), orient='h', color='#0077cc')
+    plt.xlabel('Impact on Win Probability')
+    plt.title('Permutation Importance')
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close()
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode('utf-8')
+
+def plot_score_distribution(home_sim, away_sim, home_team, away_team):
+    plt.figure(figsize=(4,2.5))
+    sns.histplot(home_sim, color='#003366', label=home_team, kde=True, stat='density', bins=range(0, max(home_sim.max(), away_sim.max())+2))
+    sns.histplot(away_sim, color='#cc3300', label=away_team, kde=True, stat='density', bins=range(0, max(home_sim.max(), away_sim.max())+2), alpha=0.7)
+    plt.xlabel('Goals')
+    plt.ylabel('Density')
+    plt.title('Simulated Score Distribution')
+    plt.legend()
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close()
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode('utf-8')
+
 def run_cli_interface(predictor, df, feature_cols):
     print("\n=== PREDICTION INTERFACE ===")
     TEAM_ID_TO_NAME = {1: 'devils', 2: 'islanders', 3: 'rangers', 4: 'flyers', 5: 'penguins', 6: 'bruins', 7: 'sabres', 8: 'canadiens', 9: 'senators', 10: 'leafs', 12: 'hurricanes', 13: 'panthers', 14: 'lightning', 15: 'capitals', 16: 'blackhawks', 17: 'red wings', 18: 'predators', 19: 'blues', 20: 'flames', 21: 'avalanche', 22: 'oilers', 23: 'canucks', 24: 'ducks', 25: 'stars', 26: 'kings', 28: 'sharks', 29: 'blue jackets', 30: 'wild', 52: 'jets', 53: 'coyotes', 54: 'golden knights', 55: 'kraken'}
@@ -713,6 +849,7 @@ def run_cli_interface(predictor, df, feature_cols):
             away_goals_ci = result['away_goals_ci']
             overtime_prob = result['overtime_prob']
             top_features = result['top_features']
+            feature_vector = np.array([result['matchup_features'].get(col, 0.0) for col in feature_cols])
             summary = get_matchup_summary(home_team_name, away_team_name, win_prob, home_goals, away_goals, overtime_prob, top_features)
             print(f"\nPrediction: {home_team_name} vs {away_team_name}")
             print(f"{home_team_name} win probability: {win_prob:.1%}")
@@ -721,6 +858,42 @@ def run_cli_interface(predictor, df, feature_cols):
             print(f"Chance of overtime: {overtime_prob:.1%}")
             print(f"Top features: {', '.join(top_features)}")
             print(f"Summary: {summary}")
+            # --- Advanced Analytics ---
+            print("\n--- Advanced Analytics ---")
+            # 1. Monte Carlo Simulation
+            sim = monte_carlo_simulation(home_goals, away_goals)
+            print(f"Simulated win %: {home_team_name} {sim['home_win_pct']:.1%}, {away_team_name} {sim['away_win_pct']:.1%}, Ties {sim['tie_pct']:.1%}")
+            print(f"Most likely score: {home_team_name} {sim['most_likely_score'][0]} - {away_team_name} {sim['most_likely_score'][1]}")
+            print(f"Upset probability: {sim['upset_prob']:.1%}")
+            # 2. Head-to-head analytics
+            h2h = head_to_head_analytics(df, home_team_id, away_team_id)
+            if h2h:
+                print(f"Last {len(h2h['recent_games'])} head-to-head games:")
+                for g in h2h['recent_games']:
+                    tname = home_team_name if g['team_id'] == home_team_id else away_team_name
+                    # Robust date formatting
+                    dt = g['date_time']
+                    if hasattr(dt, 'strftime'):
+                        date_str = dt.strftime('%Y-%m-%d')
+                    else:
+                        date_str = str(dt)[:10]
+                    print(f"  {date_str}: {tname} {g['goals']}-{g['goals_against']} ({'W' if g['won'] else 'L'})")
+                print(f"{home_team_name} H2H win rate: {h2h['home_win_rate']:.1%}, {away_team_name} H2H win rate: {h2h['away_win_rate']:.1%}, Avg margin: {h2h['avg_margin']:+.2f}")
+            # 3. Feature sensitivity
+            values, win_probs = feature_sensitivity(predictor, feature_vector, feature_cols, top_features[0], win_prob)
+            print(f"Win probability as {top_features[0]} varies:")
+            for v, p in zip(values, win_probs):
+                print(f"  {top_features[0]}={v:.2f}: win prob={p:.1%}")
+            # 4. Permutation importance
+            perm = permutation_importance(predictor, feature_vector, feature_cols, win_prob)
+            print("Permutation importance (feature, impact on win prob):")
+            for f, imp in perm:
+                print(f"  {f}: {imp:.2%}")
+            # 5. Keys to victory
+            keys = advanced_matchup_keys(df, home_team_id, away_team_id, feature_cols, feature_vector, predictor, win_prob)
+            print("Keys to victory:")
+            for k in keys:
+                print(f"  {k}")
         except ValueError as e:
             print(f"Error: {e}")
         except KeyboardInterrupt:
@@ -736,12 +909,19 @@ DASHBOARD_HTML = '''
     <title>NHL Outcome Predictor</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f7f7fa; margin: 0; padding: 0; }
-        .container { max-width: 500px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 32px; }
+        .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 32px; }
         h1 { text-align: center; color: #003366; }
         label { font-weight: bold; }
         input, select { width: 100%; padding: 8px; margin: 8px 0 16px 0; border-radius: 4px; border: 1px solid #ccc; }
         button { background: #003366; color: #fff; border: none; padding: 12px 24px; border-radius: 4px; font-size: 1em; cursor: pointer; width: 100%; }
         .result { background: #e6f2ff; border-left: 4px solid #003366; padding: 16px; margin-top: 24px; border-radius: 6px; }
+        .analytics { margin-top: 32px; }
+        .analytics h3 { color: #003366; margin-bottom: 8px; }
+        .analytics img { max-width: 100%; border-radius: 6px; margin-bottom: 12px; }
+        .h2h-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .h2h-table th, .h2h-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: center; }
+        .h2h-table th { background: #e6f2ff; }
+        .keys { background: #f9f9f9; border-left: 4px solid #0077cc; padding: 8px; margin-top: 8px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -751,13 +931,13 @@ DASHBOARD_HTML = '''
             <label for="home_team">Home Team:</label>
             <select name="home_team" id="home_team" required>
                 {% for tid, tname in teams.items() %}
-                <option value="{{ tid }}">{{ tname.title() }}</option>
+                <option value="{{ tid }}" {% if result and tid == result.home_team_id %}selected{% endif %}>{{ tname.title() }}</option>
                 {% endfor %}
             </select>
             <label for="away_team">Away Team:</label>
             <select name="away_team" id="away_team" required>
                 {% for tid, tname in teams.items() %}
-                <option value="{{ tid }}">{{ tname.title() }}</option>
+                <option value="{{ tid }}" {% if result and tid == result.away_team_id %}selected{% endif %}>{{ tname.title() }}</option>
                 {% endfor %}
             </select>
             <button type="submit">Predict</button>
@@ -768,8 +948,36 @@ DASHBOARD_HTML = '''
             <b>{{ result.home_team }}</b> vs <b>{{ result.away_team }}</b><br>
             <b>{{ result.home_team }}</b> win probability: {{ result.win_prob }}<br>
             <b>{{ result.away_team }}</b> win probability: {{ result.away_prob }}<br>
-            Predicted Score: <b>{{ result.home_team }}</b> {{ result.home_goals }} - <b>{{ result.away_team }}</b> {{ result.away_goals }}<br>
-            <span>{{ result.comment }}</span>
+            Predicted Score: <b>{{ result.home_team }}</b> {{ result.home_goals }} (80% CI: {{ result.home_goals_ci }}) - <b>{{ result.away_team }}</b> {{ result.away_goals }} (80% CI: {{ result.away_goals_ci }})<br>
+            Chance of overtime: {{ result.overtime_prob }}<br>
+            Top features: {{ result.top_features }}<br>
+            <span>{{ result.summary }}</span>
+        </div>
+        <div class="analytics">
+            <h3>Advanced Analytics</h3>
+            <b>Monte Carlo Simulation:</b><br>
+            Simulated win %: {{ result.home_team }} {{ result.sim.home_win_pct }}, {{ result.away_team }} {{ result.sim.away_win_pct }}, Ties {{ result.sim.tie_pct }}<br>
+            Most likely score: {{ result.home_team }} {{ result.sim.most_likely_score[0] }} - {{ result.away_team }} {{ result.sim.most_likely_score[1] }}<br>
+            Upset probability: {{ result.sim.upset_prob }}<br>
+            <img src="data:image/png;base64,{{ result.score_dist_img }}" alt="Score Distribution"><br>
+            <b>Feature Sensitivity:</b><br>
+            <img src="data:image/png;base64,{{ result.sensitivity_img }}" alt="Feature Sensitivity"><br>
+            <b>Permutation Importance:</b><br>
+            <img src="data:image/png;base64,{{ result.perm_img }}" alt="Permutation Importance"><br>
+            <b>Keys to Victory:</b>
+            <div class="keys">
+                {% for k in result.victory_keys %}{{ k }}<br>{% endfor %}
+            </div>
+            {% if result.h2h %}
+            <b>Head-to-Head (last {{ result.h2h_len }} games):</b>
+            <table class="h2h-table">
+                <tr><th>Date</th><th>Team</th><th>Goals</th><th>Allowed</th><th>W/L</th></tr>
+                {% for g in result.h2h %}
+                <tr><td>{{ g.date_time[:10] }}</td><td>{{ result.home_team if g.team_id == result.home_team_id else result.away_team }}</td><td>{{ g.goals }}</td><td>{{ g.goals_against }}</td><td>{% if g.won %}W{% else %}L{% endif %}</td></tr>
+                {% endfor %}
+            </table>
+            <span>{{ result.home_team }} H2H win rate: {{ result.h2h_home_win_rate }}, {{ result.away_team }} H2H win rate: {{ result.h2h_away_win_rate }}, Avg margin: {{ result.h2h_avg_margin }}</span>
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -779,7 +987,7 @@ DASHBOARD_HTML = '''
 
 def run_web_dashboard(predictor, df, feature_cols):
     if not FLASK_AVAILABLE:
-        print("Flask is not installed. Please install Flask to use the web dashboard: pip install flask")
+        print("Flask is not installed. Please install Flask to use the web dashboard: pip install flask matplotlib seaborn")
         return
     app = Flask(__name__)
     TEAM_ID_TO_NAME = {1: 'devils', 2: 'islanders', 3: 'rangers', 4: 'flyers', 5: 'penguins', 6: 'bruins', 7: 'sabres', 8: 'canadiens', 9: 'senators', 10: 'leafs', 12: 'hurricanes', 13: 'panthers', 14: 'lightning', 15: 'capitals', 16: 'blackhawks', 17: 'red wings', 18: 'predators', 19: 'blues', 20: 'flames', 21: 'avalanche', 22: 'oilers', 23: 'canucks', 24: 'ducks', 25: 'stars', 26: 'kings', 28: 'sharks', 29: 'blue jackets', 30: 'wild', 52: 'jets', 53: 'coyotes', 54: 'golden knights', 55: 'kraken'}
@@ -791,7 +999,58 @@ def run_web_dashboard(predictor, df, feature_cols):
             away_team_id = int(request.form['away_team'])
             home_team_name = TEAM_ID_TO_NAME[home_team_id].title()
             away_team_name = TEAM_ID_TO_NAME[away_team_id].title()
-            result = advanced_predict(predictor, df, home_team_id, away_team_id, feature_cols)
+            adv = advanced_predict(predictor, df, home_team_id, away_team_id, feature_cols)
+            win_prob = adv['win_prob']
+            home_goals = adv['home_goals']
+            away_goals = adv['away_goals']
+            home_goals_ci = adv['home_goals_ci']
+            away_goals_ci = adv['away_goals_ci']
+            overtime_prob = adv['overtime_prob']
+            top_features = adv['top_features']
+            feature_vector = np.array([adv['matchup_features'].get(col, 0.0) for col in feature_cols])
+            summary = get_matchup_summary(home_team_name, away_team_name, win_prob, home_goals, away_goals, overtime_prob, top_features)
+            # Advanced analytics
+            sim = monte_carlo_simulation(home_goals, away_goals)
+            h2h = head_to_head_analytics(df, home_team_id, away_team_id)
+            values, win_probs = feature_sensitivity(predictor, feature_vector, feature_cols, top_features[0], win_prob)
+            perm = permutation_importance(predictor, feature_vector, feature_cols, win_prob)
+            keys = advanced_matchup_keys(df, home_team_id, away_team_id, feature_cols, feature_vector, predictor, win_prob)
+            # Plots
+            sensitivity_img = plot_feature_sensitivity(values, win_probs, top_features[0])
+            perm_img = plot_permutation_importance(perm)
+            score_dist_img = plot_score_distribution(sim['home_sim'], sim['away_sim'], home_team_name, away_team_name)
+            # Prepare result dict
+            result = {
+                'home_team': home_team_name,
+                'away_team': away_team_name,
+                'home_team_id': home_team_id,
+                'away_team_id': away_team_id,
+                'win_prob': f"{win_prob:.1%}",
+                'away_prob': f"{1-win_prob:.1%}",
+                'home_goals': f"{home_goals:.1f}",
+                'away_goals': f"{away_goals:.1f}",
+                'home_goals_ci': f"{home_goals_ci[0]:.1f}-{home_goals_ci[1]:.1f}",
+                'away_goals_ci': f"{away_goals_ci[0]:.1f}-{away_goals_ci[1]:.1f}",
+                'overtime_prob': f"{overtime_prob:.1%}",
+                'top_features': ', '.join(top_features),
+                'summary': summary,
+                'sim': {
+                    'home_win_pct': f"{sim['home_win_pct']:.1%}",
+                    'away_win_pct': f"{sim['away_win_pct']:.1%}",
+                    'tie_pct': f"{sim['tie_pct']:.1%}",
+                    'most_likely_score': sim['most_likely_score'],
+                    'upset_prob': f"{sim['upset_prob']:.1%}"
+                },
+                'score_dist_img': score_dist_img,
+                'sensitivity_img': sensitivity_img,
+                'perm_img': perm_img,
+                'victory_keys': keys,
+                'h2h': h2h['recent_games'] if h2h else None,
+                'h2h_len': len(h2h['recent_games']) if h2h else 0,
+                'h2h_home_win_rate': f"{h2h['home_win_rate']:.1%}" if h2h else '',
+                'h2h_away_win_rate': f"{h2h['away_win_rate']:.1%}" if h2h else '',
+                'h2h_avg_margin': f"{h2h['avg_margin']:+.2f}" if h2h else ''
+            }
         return render_template_string(DASHBOARD_HTML, teams=TEAM_ID_TO_NAME, result=result)
     print("\nWeb dashboard running at http://127.0.0.1:5000/ (Ctrl+C to stop)")
     app.run(debug=False)
