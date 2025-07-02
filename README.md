@@ -24,7 +24,7 @@ This project leverages a custom-tuned deep feedforward neural network architectu
 pip install -r requirements.txt
 python main.py
 ```
-Output should look like this: 
+Output should resemble somewhat to this: 
 
 ![NHL Rec-3](https://github.com/user-attachments/assets/0d334184-a3c3-493d-86f7-c5c5fa71544c)
 
