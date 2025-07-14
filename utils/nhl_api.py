@@ -2,6 +2,15 @@ import requests
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import time
+import logging
+from typing import Optional, Dict, List, Tuple
+import warnings
+warnings.filterwarnings('ignore')
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://statsapi.web.nhl.com/api/v1"
 
@@ -77,9 +86,82 @@ def fetch_recent_games(days=60):
                 'hits_against': box['teams']['away']['teamStats']['teamSkaterStats']['hits'] if side == 'home' else box['teams']['home']['teamStats']['teamSkaterStats']['hits'],
             }
             all_games.append(record)
+    
     df = pd.DataFrame(all_games)
     # Fill missing columns for compatibility
-    for col in ['faceOffWins', 'faceoffTaken', 'save_percentage', 'shooting_percentage', 'missedShots', 'penaltyMinutes', 'power_play_pct', 'goals_per_shot', 'efficiency_score', 'overall_efficiency', 'defensive_pressure', 'penalty_efficiency', 'goal_scoring_rate', 'shot_generation_rate', 'hit_rate', 'power_play_efficiency', 'penalty_kill_efficiency', 'scoring_momentum', 'defensive_momentum', 'offensive_strength', 'defensive_strength', 'shots_against', 'hits_against']:
+    for col in ['faceOffWins', 'faceoffTaken', 'save_percentage', 'shooting_percentage', 'missedShots', 'penaltyMinutes', 'power_play_pct', 'goals_per_shot', 'efficiency_score', 'overall_efficiency', 'defensive_pressure', 'penalty_efficiency', 'goal_scoring_rate', 'shot_generation_rate', 'hit_rate', 'power_play_efficiency', 'penalty_kill_efficiency', 'scoring_momentum', 'defensive_momentum', 'offensive_strength', 'defensive_strength']:
         if col not in df.columns:
-            df[col] = 0
-    return df 
+            df[col] = 0.0
+    
+    # Calculate advanced metrics
+    df = calculate_advanced_metrics(df)
+    return df
+
+def calculate_advanced_metrics(df):
+    """Calculate advanced hockey metrics for better predictions"""
+    # Goal differential
+    df['goal_differential'] = df['goals'] - df['goals_against']
+    
+    # Shot differential and percentages
+    df['shot_differential'] = df['shots'] - df['shots_against']
+    df['shooting_percentage'] = np.where(df['shots'] > 0, df['goals'] / df['shots'], 0)
+    df['save_percentage'] = np.where(df['shots_against'] > 0, 1 - (df['goals_against'] / df['shots_against']), 0)
+    
+    # Power play efficiency
+    df['power_play_pct'] = np.where(df['powerPlayOpportunities'] > 0, 
+                                    df['powerPlayGoals'] / df['powerPlayOpportunities'], 0)
+    
+    # Face-off metrics
+    df['faceOffWins'] = df['faceOffWinPercentage'] * df.get('faceoffTaken', 50) / 100
+    df['faceoffTaken'] = df.get('faceoffTaken', 50)
+    
+    # Advanced efficiency metrics
+    df['goals_per_shot'] = df['shooting_percentage']
+    df['possession_ratio'] = df['faceOffWinPercentage'] / 100
+    df['efficiency_score'] = (df['goals'] + df['takeaways'] - df['giveaways']) / (df['shots'] + 1)
+    
+    # Physical play metrics
+    df['hit_rate'] = df['hits'] / (df['shots'] + df['hits'] + 1)
+    df['defensive_pressure'] = (df['hits'] + df['blocked'] + df['takeaways']) / 3
+    
+    # Momentum indicators
+    df['scoring_momentum'] = df['goals'] * df['shooting_percentage']
+    df['defensive_momentum'] = df['blocked'] + df['takeaways'] - df['giveaways']
+    
+    # Overall strength indicators
+    df['offensive_strength'] = (df['goals'] + df['shots'] + df['powerPlayGoals']) / 3
+    df['defensive_strength'] = (df['blocked'] + df['takeaways'] + df['save_percentage']) / 3
+    
+    # Penalty metrics
+    df['penalty_efficiency'] = np.where(df['pim'] > 0, df['powerPlayGoals'] / df['pim'], 0)
+    
+    return df
+
+def get_upcoming_games(days_ahead=7):
+    """Fetch upcoming NHL games for prediction"""
+    today = datetime.utcnow().date()
+    end_date = today + timedelta(days=days_ahead)
+    
+    schedule = get_schedule(start_date=today.isoformat(), end_date=end_date.isoformat())
+    upcoming = schedule[schedule['status'].isin(['Preview', 'Scheduled'])].copy()
+    
+    return upcoming
+
+def get_team_info():
+    """Get comprehensive team information"""
+    teams_df = get_teams()
+    return teams_df
+
+def validate_api_connection():
+    """Test if NHL API is accessible"""
+    try:
+        response = requests.get(f"{BASE_URL}/teams", timeout=10)
+        if response.status_code == 200:
+            logger.info("NHL API connection successful")
+            return True
+        else:
+            logger.warning(f"NHL API returned status code: {response.status_code}")
+            return False
+    except Exception as e:
+        logger.error(f"NHL API connection failed: {e}")
+        return False 

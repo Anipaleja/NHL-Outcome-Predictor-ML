@@ -1,28 +1,48 @@
-# NHL Match Outcome Predictor
+# 🏒 Advanced NHL Outcome Predictor
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)  [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)  [![Stars](https://img.shields.io/github/stars/anipaleja/NHL-Outcome-Predictor-ML?style=social)](https://github.com/anipaleja/NHL-Outcome-Predictor-ML/stargazers)  [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)  [![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.4%2B-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 
+A **revolutionary** machine learning system that predicts NHL game outcomes using advanced AI architectures. Built with transformer neural networks, quantum-inspired ensembles, and comprehensive feature engineering for professional-grade accuracy.
 
-A **work-in-progress** machine learning project that predicts the outcome of NHL games using historical match data. Built with a deep learning architecture, the system is designed to handle a wide variety of game metrics and team statistics.
+## 🚀 Revolutionary Features
 
-**PLEASE NOTE:** There are two different branches of the repository, the main branch is a working predictor based on the averages of previous statistics and data. The Upcoming-Game-Prediction branch is for a seperate part of the project that uses the NHL API for real time statistics, although, we are trying to get the API to send the real time statistics to a `.csv` file to get the data more locally. 
+- **🧠 Transformer Neural Networks**: Multi-head attention mechanisms for complex pattern recognition
+- **⚡ Quantum-Inspired Ensembles**: Advanced ensemble methods with LightGBM, XGBoost, and CatBoost
+- **🎯 261 Advanced Features**: Comprehensive feature engineering from team statistics to venue analysis
+- **🌐 Interactive Web Interface**: Beautiful, responsive UI for team vs team predictions
+- **📊 Real-time Analytics**: Live NHL API integration with intelligent caching
+- **🏟️ Venue Intelligence**: Home/away advantages and playoff mode considerations
 
-## Technical Overview
+## Technical Architecture
 
-This project leverages a custom-tuned deep feedforward neural network architecture with dense layers, ReLU activations, and dropout regularization to mitigate overfitting. Data undergoes extensive preprocessing including label encoding of categorical features and MinMax normalization. Hyperparameter tuning is manually configured for learning rate, batch size, and hidden layer dimensionality. The training pipeline utilizes TensorFlow's Keras API and integrates scikit-learn utilities for efficient data transformation. Future iterations will explore cross-validation, model persistence with HDF5, and potentially Bayesian optimization for hyperparameter search.
+This system employs a sophisticated multi-layer approach:
 
-## Features
+- **Core ML Framework**: PyTorch transformers with 512-dimensional embeddings and 16 attention heads
+- **Ensemble Pipeline**: LightGBM, XGBoost, CatBoost with intelligent weight optimization
+- **Feature Engineering**: 43 → 261 features including rolling averages, momentum indicators, and venue analytics
+- **Data Pipeline**: Robust NHL API integration with CSV fallback (62,890+ historical games)
+- **Web Framework**: Flask-based interactive interface with real-time predictions
 
-- TensorFlow-based neural network for classification
-- Data preprocessing with Pandas and scikit-learn
-- Label encoding and feature scaling
-- Modular codebase with support for further tuning and experimentation
-- Train/test split for model evaluation
+## Quick Start
 
-## Setup
-
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
-python main.py
+```
+
+### 2. Run Quick Demo
+```bash
+python quick_demo.py
+```
+
+### 3. Launch Web Interface
+```bash
+python web_interface.py
+```
+Then open: http://localhost:5000
+
+### 4. Advanced Usage
+```bash
+python advanced_nhl_predictor.py
 ```
 Output should look like this: 
 
