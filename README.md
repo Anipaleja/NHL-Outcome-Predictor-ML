@@ -60,4 +60,5 @@ Please feel free to contribute as needed! Submit an issue or pull request.
 ## License
 
 GNU AFFERO GENERAL PUBLIC LICENSE
+
 See the [license](licence.md) for more details
