@@ -1,7 +1,7 @@
 # NHL Outcome Predictor
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)  [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)  [![Stars](https://img.shields.io/github/stars/anipaleja/NHL-Outcome-Predictor-ML?style=social)](https://github.com/anipaleja/NHL-Outcome-Predictor-ML/stargazers)  [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)  [![Scikit-learn](https://img.shields.io/badge/scikit--learn-1.4%2B-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 
-A machine learning system that predicts NHL game outcomes using advanced AI architectures. Built with transformer neural networks, quantum-inspired ensembles, and comprehensive feature engineering for professional-grade accuracy.
+A machine learning system that predicts NHL game outcomes using AI architectures. Built with transformer neural networks and quantum inspired ensembles.
 
 ## Features
 
