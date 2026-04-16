@@ -20,7 +20,7 @@ This system employs a sophisticated multi-layer approach:
 - **Ensemble Pipeline**: LightGBM, XGBoost, CatBoost with intelligent weight optimization
 - **Feature Engineering**: 43 → 261 features including rolling averages, momentum indicators, and venue analytics
 - **Data Pipeline**: Robust NHL API integration with CSV fallback (62,890+ historical games)
-- **Web Framework**: Flask-based interactive interface with real-time predictions
+- **Web Framework**: Flask-based interactive interface with predictions
 
 ## Quick Start
 
@@ -58,7 +58,5 @@ After installing the required prerequisites, the model initiates its self-traini
 Please feel free to contribute as needed! Submit an issue or pull request.
 
 ## License
-
-GNU AFFERO GENERAL PUBLIC LICENSE
 
 See the [license](LICENSE.md) for more details
